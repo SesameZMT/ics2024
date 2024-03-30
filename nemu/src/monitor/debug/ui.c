@@ -36,6 +36,125 @@ static int cmd_q(char *args) {
   return -1;
 }
 
+static int cmd_si(char *args) {
+    uint64_t N = 0;
+    if(args == NULL) { // 若无输入值则N默认为1
+        N = 1;
+    }
+    else {
+        int temp = sscanf(args,"%llu",&N);
+        if(temp <= 0) {
+            printf("args error in cmd_si\n");
+            return 0;
+        }
+    }
+    cpu_exec(N);
+    return 0;
+}
+
+static int cmd_info(char *args) {
+    char s;
+    if(args == NULL) {
+        printf("args error in cmd_info (miss args)\n");
+        return 0;
+    }
+    int temp = sscanf(args, "%c", &s);
+    if(temp <= 0) {
+        //解析失败
+        printf("args error in cmd_info\n");
+        return 0;
+    }
+    if(s == 'w') {
+        print_wp();
+        return 0;
+    }
+
+    if(s == 'r') {
+        //打印寄存器
+        //32bit
+        for(int i = 0; i < 8; i++) {
+        printf("%s  0x%x\n", regsl[i], reg_l(i));
+        }
+        printf("eip  0x%x\n", cpu.eip);
+        //16bit
+        for(int i = 0; i < 8; i++) {
+        printf("%s  0x%x\n", regsw[i], reg_w(i));
+        }
+        //8bit
+        for(int i = 0; i < 8; i++)
+        {
+        printf("%s  0x%x\n", regsb[i], reg_b(i));
+        }
+        return 0;
+    }
+
+    //如果产生错误
+    printf("args error in cmd_info\n");
+    return 0;
+}
+
+static int cmd_x(char *args) {
+    int len = 0;
+    char *t = (char *)malloc(30*sizeof(char));
+    vaddr_t addr;
+    int temp = sscanf(args,"%d %s",&len,t);
+    if(temp <= 0) {
+        printf("args error in cmd_si\n");
+        return 0;
+    }
+    bool success=false;
+    addr=expr(t,&success);
+    printf("Memory:\n");
+    for(int i = 0;i < len;i++) {
+        if(i % 4 == 0) { 
+            printf("0x%x:", addr);
+            uint32_t val=vaddr_read(addr,4);
+            uint8_t *by=(uint8_t *)&val;
+            printf("0x");
+            for(int j=3;j>=0;j--) {
+                printf("%02x",by[j]);
+            }
+            printf("\n");
+            addr+=4;
+        } 
+    }
+    return 0;
+}
+
+static int cmd_p(char *args) {
+  //表达式求值
+  bool is_success;
+  int temp = expr(args, &is_success);
+  if(is_success == false) {
+    printf("error in expr()\n");
+  }
+  else {
+    printf("the value of expr is:%d\n", temp);
+  }
+  return 0;
+}
+
+static int cmd_w(char *args) { //监视点的申请
+    char *s1 = (char*)malloc(6*sizeof(char));
+    char *s2 = (char*)malloc(20*sizeof(char));
+    int temp = sscanf(args,"%s %s",s1,s2);
+    if(temp <= 0) {
+        printf("args error in cmd_w\n");
+        return 0;
+    }
+    if(strcmp(s1,"set") == 0) {
+        new_wp(s2);
+        return 0;
+    }
+    else if(strcmp(s1,"remove") == 0) {
+        int n = 0;
+        temp = sscanf(s2,"%d",&n);
+        free_wp(n);
+        return 0;
+    }
+    return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -46,7 +165,11 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "si", "args:[N]; exectue [N] instructions step by step", cmd_si}, //让程序单步执行 N 条指令后暂停执行, 当N没有给出时, 默认为1
+  { "info", "args:r/w;print information about register or watch point ", cmd_info}, //打印寄存器状态
+  { "x", "x [N] [EXPR];sacn the memory", cmd_x }, //内存扫描
+  { "p", "expr", cmd_p}, //表达式
+  { "w", "set:set the watchpoint\n    remove:remove the watchpoint\n", cmd_w}, //添加监视点
   /* TODO: Add more commands */
 
 };
