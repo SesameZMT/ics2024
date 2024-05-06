@@ -1,15 +1,45 @@
 #include "common.h"
 #include "syscall.h"
+#include "fs.h"
 
 int sys_write(int fd, void *buf, size_t len) {
-    if(fd == 1 || fd == 2){
-        char* c = (char*) buf;
-        for(int i = 0; i < len; i++) {
-            _putc(c[i]);
-        }
-        return len;
-    }
-    return -1;
+	if(fd == 1 || fd == 2){
+		char c;
+    // Log("buffer:%s", (char*)buf);
+		for(int i = 0; i < len; i++) {
+			memcpy(&c ,buf + i, 1);
+			_putc(c);
+		}
+		return len;
+	}
+  // else{
+  //   panic("Unhandled fd=%d in sys_write()",fd);
+  // }
+  if(fd >= 3) {
+    return fs_write(fd, buf, len);
+  }
+  Log("fd <= 0");
+	return -1;			
+}
+
+int sys_open(const char *pathname){
+    return fs_open(pathname, 0, 0);
+}
+
+int sys_read(int fd, void *buf,size_t len){
+    return fs_read(fd, buf, len);
+}
+
+int sys_lseek(int fd, off_t offset, int whence) {
+    return fs_lseek(fd, offset, whence);
+}
+
+int sys_brk(int addr) {
+  return 0;
+}
+
+int sys_close(int fd){
+    return fs_close(fd);
 }
 
 _RegSet* do_syscall(_RegSet *r) {
@@ -24,6 +54,10 @@ _RegSet* do_syscall(_RegSet *r) {
     case SYS_exit:  _halt(a[1]); break;
     case SYS_write: r->eax = sys_write(a[1], (void *)a[2], a[3]); break;
     case SYS_brk:   r->eax = 0; break;
+    case SYS_read:  r->eax = sys_read(a[1],(void*)a[2],a[3]); break;
+    case SYS_open:  r->eax = sys_open((char*) a[1]); break;
+    case SYS_close: r->eax = sys_close(a[1]); break;
+    case SYS_lseek: r->eax=sys_lseek(a[1],a[2],a[3]); break;
     default: panic("Unhandled syscall ID = %d", a[0]);
   }
 
