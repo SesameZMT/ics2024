@@ -34,18 +34,28 @@ typedef struct {
   /* In NEMU, rtlreg_t is exactly uint32_t. This makes RTL instructions
    * in PA2 able to directly access these registers.
    */
-  struct bs {
-    unsigned int CF:1;
-    unsigned int one:1;
-    unsigned int :4;
-    unsigned int ZF:1;
-    unsigned int SF:1;
-    unsigned int :1;
-    unsigned int IF:1;
-    unsigned int :1;
-    unsigned int OF:1;
-    unsigned int :20;
-  } eflags;
+   
+  union {vaddr_t eip;
+         struct{
+             uint32_t CF : 1;
+             uint32_t    : 5;
+             uint32_t ZF : 1;
+             uint32_t SF : 1;
+             uint32_t    : 1;
+             uint32_t IF : 1;
+             uint32_t    : 1;
+             uint32_t OF : 1;
+             uint32_t    : 20;
+         };
+         rtlreg_t value;
+     } eflags;
+     
+
+    struct {
+        uint32_t base;  // 32位base
+        uint16_t limit; // 16位limit
+    }idtr;
+    uint16_t cs;
   
 } CPU_state;
 
