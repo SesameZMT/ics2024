@@ -1,15 +1,17 @@
 #include "common.h"
 #include "syscall.h"
 
-uintptr_t sys_write(int fd, const void *buf, size_t len) {
-  uintptr_t i = 0;
-  if(fd == 1 || fd == 2){
-    for(; len > 0; len--) {
-      _putc(((char*)buf)[i]);
-      i++;
+int sys_write(int fd, void *buf, size_t len) {
+    if(fd == 1 || fd == 2){
+        char c;
+        for(int i = 0; i < len; i++) {
+            memcpy(&c ,buf + i, 1);
+            _putc(c);
+        }
+        return len;
     }
-  }
-  return i;
+    Log("fd <= 0");
+    return -1;
 }
 
 _RegSet* do_syscall(_RegSet *r) {
