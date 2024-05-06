@@ -7,7 +7,7 @@ int sys_write(int fd, void *buf, size_t len) {
         for(int i = 0; i < len; i++) {
             _putc(c[i]);
         }
-        //return len;
+        return len;
     }
     return -1;
 }
