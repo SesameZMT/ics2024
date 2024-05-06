@@ -20,33 +20,27 @@ void dispinfo_read(void *buf, off_t offset, size_t len) {
 
 extern void getScreen(int *width, int *height);
 void fb_write(const void *buf, off_t offset, size_t len) {
-  assert(offset % 4 == 0 && len % 4 == 0);
-  int index, screen_x1, screen_y1, screen_y2;
-  int width=0,height=0;
-  getScreen(&width, &height);
-  index=offset/4;
-  screen_y1=index/width;
-  screen_x1=index%width;
-  index=(offset+len)/4;
-  screen_y2=index/width;
-  assert(screen_y2>=screen_y1);
-  if(screen_y2==screen_y1)
-  {
-    _draw_rect(buf,screen_x1,screen_y1,len/4,1);
-    return ;
-  }
-  int tempw=width-screen_x1;
-  if(screen_y2-screen_y1==1)
-  {
-    _draw_rect(buf,screen_x1,screen_y1,tempw,1);
-    _draw_rect(buf+tempw * 4 ,0,screen_y2,len/4-tempw,1);
-    return ;
-  }
-  _draw_rect(buf, screen_x1, screen_y1, tempw, 1);
-  int tempy = screen_y2 - screen_y1 - 1;
-  _draw_rect(buf + tempw * 4, 0, screen_y1 + 1, width, tempy);
-  _draw_rect(buf+tempw*4+tempy*width*4,0,screen_y2, len / 4 - tempw - tempy * width,
-  1);
+    int x, y;
+    int len1, len2, len3;
+    offset = offset >> 2; // 将偏移量右移两位，相当于除以4
+    y = offset / _screen.width; // 计算y坐标
+    x = offset % _screen.width; // 计算x坐标
+
+    len = len >> 2; // 同样将长度右移两位，相当于除以4
+    len1 = len2 = len3 = 0; // 初始化三个长度变量
+
+    len1 = len <= _screen.width - x ? len : _screen.width - x; // 计算第一个矩形的长度
+    _draw_rect((uint32_t *)buf, x, y, len1, 1); // 绘制第一个矩形
+
+    if (len > len1 && ((len - len1) > _screen.width)) { // 如果剩余长度大于第一个矩形的长度，并且剩余长度大于屏幕宽度
+        len2 = len - len1; // 计算第二个矩形的长度
+        _draw_rect((uint32_t *)buf + len1, 0, y + 1, _screen.width, len2 / _screen.width); // 绘制第二个矩形
+    }
+
+    if (len - len1 - len2 > 0) { // 如果还有剩余长度
+        len3 = len - len1 - len2; // 计算第三个矩形的长度
+        _draw_rect((uint32_t *)buf + len1 + len2, 0, y + len2 / _screen.width + 1, len3, 1); // 绘制第三个矩形
+    }
 }
 
 void init_device() {
