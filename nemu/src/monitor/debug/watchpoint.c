@@ -5,15 +5,15 @@
 
 static WP wp_pool[NR_WP];
 static WP *head, *free_;
-static int used_next;
-static WP* wptemp;
+static int used_next; //用于记录在head中下一个使用的wp的index
+static WP *wptemp;
 
 void init_wp_pool() {
   int i;
   for (i = 0; i < NR_WP; i ++) {
     wp_pool[i].NO = i;
     wp_pool[i].next = &wp_pool[i + 1];
-    wp_pool[i].oldValue = 0;
+    wp_pool[i].old = 0;
     wp_pool[i].hitNum = 0;
   }
   wp_pool[NR_WP - 1].next = NULL;
@@ -23,99 +23,114 @@ void init_wp_pool() {
   used_next = 0;
 }
 
+/* TODO: Implement the functionality of watchpoint */
 bool new_wp(char *args) {
-  if (free_ == NULL)
+  //从free链表中返回一个空闲监视点结构
+  if(free_ == NULL) {
+    //首先查看free链表是否存在，如果不存在则报错
     assert(0);
-  
-  WP* rst = free_;
-  free_ = free_->next;
+  }
+  //记录取出的结构并更新链表
+  WP* result = free_;
+  free_ = free_ -> next;
 
-  rst->NO = used_next++;
-  rst->next = NULL;
-  strcpy(rst->e, args);
-  rst->hitNum = 0;
-
-  bool b;
-  rst->oldValue = expr(rst->e, &b);
-  if (!b) {
-    printf("Syntax error.\n");
+  //设置新的wp相关信息
+  result -> NO = used_next;
+  used_next++; //记录索引信息
+  result -> next = NULL; //从链表中取出
+  strcpy(result -> e, args);
+  result -> hitNum = 0; //初始化触发次数
+  bool is_success;
+  result -> old = expr(result -> e, &is_success); //计算旧的值
+  if(is_success == false) {
+    printf("error in new_wp; expression fault!\n");
     return false;
   }
 
+  //对head链表进行更新
   wptemp = head;
-  if (wptemp == NULL) {
-    head = rst;
-  } else {
-    while (wptemp->next != NULL)
-      wptemp = wptemp->next;
-    wptemp->next = rst;
+  if(wptemp == NULL) {
+    head = result;
   }
-
-  printf("Success: set watchpoint %d, oldValue=%d\n", rst->NO, rst->oldValue);
+  else {
+    while (wptemp -> next != NULL)
+    {
+      wptemp = wptemp -> next;
+    }
+    wptemp -> next = result;
+  }
+  printf("Success: set watchpoint %d, oldvalue = %d\n", result -> NO, result -> old);
   return true;
 }
 
+//删除监视点
 bool free_wp(int num) {
-  WP* thewp = NULL;
-  if (head == NULL) {
-    printf("No watchpoint now\n");
+  WP *chosen = NULL; //被选中删除的监视点
+  if(head == NULL) {
+    printf("no watch point now\n");
     return false;
   }
-
-  if (head->NO == num) {
-    thewp = head;
-    head = head->next;
-  } else {
+  if(head -> NO == num) {
+    chosen = head;
+    head = head -> next;
+  }
+  else {
     wptemp = head;
-    while (wptemp!=NULL && wptemp->next!=NULL) {
-      if (wptemp->next->NO == num) {
-        thewp = wptemp->next;
-        wptemp->next = wptemp->next->next;
-        break;
+    while (wptemp != NULL && wptemp -> next != NULL)
+    {
+      /* code */
+      if(wptemp -> next -> NO == num) {
+        chosen = wptemp -> next;
+        wptemp -> next = wptemp -> next -> next;
+        break; 
       }
-      wptemp = wptemp->next;
+      wptemp = wptemp -> next;
     }
   }
-
-  if (thewp != NULL) {
-    thewp->next = free_;
-    free_ = thewp;
+  //删除后在free链表中进行添加
+  if(chosen != NULL) {
+    chosen -> next = free_;
+    free_ = chosen;
     return true;
   }
   return false;
 }
 
 void print_wp() {
-  if (head == NULL) {
-    printf("No watchpoint now\n");
+  if(head == NULL) {
+    printf("no watchpoint now\n");
     return;
   }
-  printf("Watchpoints:\n");
-  printf("NO.   expr            hitTimes\n");
+  printf("watchpoint:\n");
+  printf("NO.  expr    hitTimes\n");
   wptemp = head;
-  while (wptemp) {
-    printf("%d     %s          %d\n", wptemp->NO, wptemp->e, wptemp->hitNum);
-    wptemp = wptemp->next;
+  while (wptemp != NULL)
+  {
+    printf("%d  %s    %d\n", wptemp -> NO, wptemp -> e, wptemp -> hitNum);
+    wptemp = wptemp ->next;
   }
 }
 
 bool watch_wp() {
-  bool success;
-  int rst;
-  if (head == NULL)
+  bool is_success;
+  int result;
+  if(head == NULL) {
     return true;
-  
+  } 
   wptemp = head;
-  while (wptemp) {
-    rst = expr(wptemp->e, &success);
-    if (rst != wptemp->oldValue) {
-      wptemp->hitNum += 1;
-      printf("Hardware watchpoint %d:%s\n", wptemp->NO, wptemp->e);
-      printf("Old value:%d\nNew value:%d\n\n", wptemp->oldValue, rst);
-      wptemp->oldValue = rst;
+  while (wptemp != NULL)
+  {
+    /* code */
+    result = expr(wptemp -> e, &is_success);
+    if(result != wptemp -> old)
+    {
+      wptemp -> hitNum += 1;
+      printf("Hardware watchpoint %d:%s\n", wptemp -> NO, wptemp -> e);
+      printf("Old value:%d\nNew valus:%d\n\n", wptemp -> old, result);
+      wptemp -> old = result;
       return false;
     }
-    wptemp = wptemp->next;
+    wptemp = wptemp -> next;
   }
   return true;
 }
