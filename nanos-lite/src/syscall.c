@@ -31,7 +31,8 @@ int sys_lseek(int fd, off_t offset, int whence) {
 }
 
 int sys_brk(int addr) {
-  return 0;
+  extern int mm_brk(uint32_t new_brk);
+  return mm_brk(addr);
 }
 
 int sys_close(int fd){
@@ -49,7 +50,7 @@ _RegSet* do_syscall(_RegSet *r) {
     case SYS_none:  r->eax = 1; break;
     case SYS_exit:  _halt(a[1]); break;
     case SYS_write: r->eax = sys_write(a[1], (void *)a[2], a[3]); break;
-    case SYS_brk:   r->eax = 0; break;
+    case SYS_brk:   SYSCALL_ARG1(r) = sys_brk(a[1]);break;
     case SYS_read:  r->eax = sys_read(a[1],(void*)a[2],a[3]); break;
     case SYS_open:  r->eax = sys_open((char*) a[1]); break;
     case SYS_close: r->eax = sys_close(a[1]); break;
