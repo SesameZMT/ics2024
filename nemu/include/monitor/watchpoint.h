@@ -13,8 +13,8 @@ typedef struct watchpoint {
     int hitNum;
 } WP;
 
-void new_wp(char *arg); //新建监视点
-void free_wp(int num);  //删除监视点
+bool new_wp(char *arg); //新建监视点
+bool free_wp(int num);  //删除监视点
 void print_wp();        //打印监视点
 bool watch_wp();        //监视点值变化
 

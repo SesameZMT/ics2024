@@ -136,25 +136,23 @@ static int cmd_p(char *args) {
   return 0;
 }
 
-static int cmd_w(char *args) { //监视点的申请
-    char *s1 = (char*)malloc(6*sizeof(char));
-    char *s2 = (char*)malloc(20*sizeof(char));
-    int temp = sscanf(args,"%s %s",s1,s2);
-    if(temp <= 0) {
-        printf("args error in cmd_w\n");
-        return 0;
-    }
-    if(strcmp(s1,"set") == 0) {
-        new_wp(s2);
-        return 0;
-    }
-    else if(strcmp(s1,"remove") == 0) {
-        int n = 0;
-        temp = sscanf(s2,"%d",&n);
-        free_wp(n);
-        return 0;
-    }
+static int cmd_w(char *args) {
+  new_wp(args);
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  int num = 0;
+  if (sscanf(args, "%d", &num) <= 0) {
+    printf("Invalid argument.\n");
     return 0;
+  }
+
+  if (free_wp(num))
+    printf("Successfully deleted watchpoint %d\n", num);
+  else
+    printf("Error: no watchpoint %d\n", num);
+  return 0;
 }
 
 static int cmd_help(char *args);
@@ -171,7 +169,8 @@ static struct {
   { "info", "args:r/w;print information about register or watch point ", cmd_info}, //打印寄存器状态
   { "x", "x [N] [EXPR];sacn the memory", cmd_x }, //内存扫描
   { "p", "expr", cmd_p}, //表达式
-  { "w", "set:set the watchpoint\n    remove:remove the watchpoint\n", cmd_w}, //添加监视点
+  { "w", "Set watchpoint, usage: w EXPR", cmd_w },
+  { "d", "Delete watchpoint No.N, usage: d N", cmd_d },
   /* TODO: Add more commands */
 
 };
