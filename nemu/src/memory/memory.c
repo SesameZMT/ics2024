@@ -37,27 +37,29 @@ void paddr_write(paddr_t addr, int len, uint32_t data) {
     mmio_write(addr, len, data, r);
 }
 
-paddr_t page_translate(vaddr_t addr,bool iswrite){
-    CR0 cr0=(CR0)cpu.CR0;
-    if(cr0.paging && cr0.protect_enable){
-        CR3 cr3=(CR3)cpu.CR3;
+paddr_t page_translate(vaddr_t addr, bool iswrite) {
+  CR0 cr0 = (CR0)cpu.CR0;
+  if(cr0.paging && cr0.protect_enable) {
+    CR3 crs = (CR3)cpu.CR3;
 
-        PDE* pgdirs=(PDE*)PTE_ADDR(cr3.val);
-        PDE pde=(PDE)paddr_read((uint32_t)(pgdirs+PDX(addr)),4);
+    PDE *pgdirs = (PDE*)PTE_ADDR(crs.val);
+    PDE pde = (PDE)paddr_read((uint32_t)(pgdirs + PDX(addr)), 4);
 
-        PTE* ptab=(PTE*)PTE_ADDR(pde.val);
-        PTE pte=(PTE)paddr_read((uint32_t)(ptab+PTX(addr)),4);
-        Assert(pte.present,"addr=0x%x",addr);
+    PTE *ptable = (PTE*)PTE_ADDR(pde.val);
+    PTE pte = (PTE)paddr_read((uint32_t)(ptable + PTX(addr)), 4);
+    //printf("hhahah%x, jhhh%x\n", pte.present, addr);
+    Assert(pte.present, "addr=0x%x", addr);
 
-        pde.accessed=1;
-        pte.accessed=1;
-        if(iswrite){
-            pte.dirty=1;
-        }
-        paddr_t paddr=PTE_ADDR(pde.val) | OFF(addr);
-        return paddr;
+    pde.accessed=1;
+    pte.accessed=1;
+    if(iswrite) {
+      pte.dirty=1;
     }
-    return addr;
+    paddr_t paddr = PTE_ADDR(pte.val) | OFF(addr);
+    // printf("vaddr=0x%x, paddr=0x%x\n", addr, paddr);
+    return paddr;
+  }
+	return addr;
 }
 
 uint32_t vaddr_read(vaddr_t addr, int len) {
