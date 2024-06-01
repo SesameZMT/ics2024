@@ -36,5 +36,7 @@ extern void load_prog(const char *filename);
     // load_prog("/bin/dummy");
     load_prog("/bin/pal");
 
+    _trap();
+
   panic("Should not reach here");
 }
