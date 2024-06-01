@@ -5,7 +5,6 @@ void raise_intr(uint8_t NO, vaddr_t ret_addr) {
    /* TODO: Trigger an interrupt/exception with ``NO''.
     * That is, use ``NO'' to index the IDT.
     */
-
    //获取门描述符
    vaddr_t gate_addr = cpu.idtr.base + 8 * NO;
 
@@ -30,4 +29,5 @@ void raise_intr(uint8_t NO, vaddr_t ret_addr) {
 
 
 void dev_raise_intr() {
+    cpu.INTR = true;
 }
