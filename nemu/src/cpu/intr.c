@@ -15,6 +15,7 @@ void raise_intr(uint8_t NO, vaddr_t ret_addr) {
    t0 = cpu.cs; //cpu.cs 只有16位，需要转换成32位
    rtl_push(&cpu.eflags.value);
    rtl_push(&t0);
+   cpu.eflags.IF = 0;
    rtl_push(&ret_addr);
 
    //组合中断处理程序入口点
